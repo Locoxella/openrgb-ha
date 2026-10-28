@@ -19,3 +19,14 @@ This project maintains our customized OpenRGB integration for Home Assistant. It
   - Monitors `home-assistant/core` releases.
   - Automatically rebases or applies patches against new upstream Core releases.
   - Generates tags formatted as `<UPSTREAM_VERSION>-custom.<N>` and creates GitHub Releases for HACS.
+
+## Upstream Pull Request Strategy
+- **Target Repository:** `home-assistant/core` (`homeassistant/components/openrgb`)
+- **Key Changes for PR:**
+  1. `coordinator.py`: Generalize `stable_location` invocation to include vendors whose wireless/battery-saving peripherals omit serial numbers during sleep cycles (e.g. `vendor_lower in ("asus", "razer")` or whenever a device key needs stable fallback).
+  2. `light.py`: Sanitize `serial_number` in `DeviceInfo` (`None` instead of raw whitespace string or `"none"`).
+- **Checklist before submitting PR:**
+  - [ ] Validate stability over multi-day use (confirm zero duplicate mouse entities after wake/sleep cycles).
+  - [ ] Verify clean automated sync of fork releases via GitHub Actions.
+  - [ ] Branch out from `home-assistant/core:dev` (`fix/openrgb-peripheral-sleep-reconnect`).
+  - [ ] Run Home Assistant Core pre-commit hooks (`ruff`, `mypy`).
