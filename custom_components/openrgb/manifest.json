@@ -1,12 +1,16 @@
 {
   "domain": "openrgb",
   "name": "OpenRGB",
-  "codeowners": ["@felipecrs"],
+  "codeowners": [
+    "@felipecrs"
+  ],
   "config_flow": true,
   "documentation": "https://www.home-assistant.io/integrations/openrgb",
   "integration_type": "hub",
   "iot_class": "local_polling",
   "quality_scale": "silver",
-  "requirements": ["openrgb-python==0.3.7"],
-  "version": "2026.10.3-fixed"
+  "requirements": [
+    "openrgb-python==0.3.7"
+  ],
+  "version": "2026.10.4-custom.1"
 }

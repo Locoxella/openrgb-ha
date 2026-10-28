@@ -7,7 +7,6 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
-from homeassistant.helpers.restore_state import RestoreEntity
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import CONNECTION_ERRORS, DOMAIN, UID_SEPARATOR
@@ -26,14 +25,13 @@ async def async_setup_entry(
     async_add_entities([OpenRGBProfileSelect(coordinator, config_entry)])
 
 
-class OpenRGBProfileSelect(
-    CoordinatorEntity[OpenRGBCoordinator], SelectEntity, RestoreEntity
-):
+class OpenRGBProfileSelect(CoordinatorEntity[OpenRGBCoordinator], SelectEntity):
     """Representation of an OpenRGB profile select entity."""
 
     _attr_translation_key = "profile"
     _attr_has_entity_name = True
 
+    _state_hash: int | None = None
     _pending_profile: str | None = None
 
     def __init__(
@@ -47,22 +45,11 @@ class OpenRGBProfileSelect(
         )
         self._update_attrs()
 
-    @override
-    async def async_added_to_hass(self) -> None:
-        """Handle entity added to hass."""
-        await super().async_added_to_hass()
-        if (last_state := await self.async_get_last_state()) is not None:
-            if last_state.state in self._attr_options:
-                self._attr_current_option = last_state.state
-                self.async_write_ha_state()
-                return
-
-        if "trabajo" in self._attr_options:
-            self._attr_current_option = "trabajo"
-            self.async_write_ha_state()
-        elif self._attr_options:
-            self._attr_current_option = self._attr_options[0]
-            self.async_write_ha_state()
+    def _compute_state_hash(self) -> int:
+        """Compute a hash of device states."""
+        return hash(
+            "\n".join(str(device.data) for device in self.coordinator.client.devices)
+        )
 
     @callback
     def _update_attrs(self) -> None:
@@ -74,6 +61,14 @@ class OpenRGBProfileSelect(
         if self._pending_profile is not None:
             self._attr_current_option = self._pending_profile
             self._pending_profile = None
+            self._state_hash = self._compute_state_hash()
+        # Only check for state changes if we have a current option to potentially clear
+        elif self._attr_current_option is not None:
+            current_hash = self._compute_state_hash()
+            # If state changed, we can no longer assume current profile
+            if current_hash != self._state_hash:
+                self._attr_current_option = None
+                self._state_hash = None
 
     @callback
     @override
