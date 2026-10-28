@@ -1,49 +1,94 @@
 {
     "config": {
         "abort": {
-            "already_configured": "O serviço já se encontra configurado",
-            "conn_error": "Não foi possível estabelecer ligação."
+            "already_configured": "Dispositivo j\u00e1 configurado"
         },
         "error": {
-            "cannot_connect": "Não foi possível estabelecer ligação",
-            "unknown": "Erro desconhecido"
+            "cannot_connect": "A liga\u00e7\u00e3o falhou",
+            "invalid_host": "Endere\u00e7o IP ou anfitri\u00e3o inv\u00e1lido.",
+            "unknown": "Erro inesperado"
         },
-        "flow_title": "Configuração do OpenRGB",
         "step": {
+            "reconfigure": {
+                "data": {
+                    "host": "Anfitri\u00e3o",
+                    "port": "Porta"
+                },
+                "data_description": {
+                    "host": "O endere\u00e7o IP ou nome do anfitri\u00e3o do computador que executa o servidor OpenRGB SDK.",
+                    "port": "O n\u00famero da porta em que o servidor OpenRGB SDK est\u00e1 a ser executado."
+                },
+                "description": "Atualize as defini\u00e7\u00f5es de liga\u00e7\u00e3o do seu servidor OpenRGB SDK.",
+                "title": "Reconfigurar o servidor OpenRGB SDK"
+            },
             "user": {
                 "data": {
-                    "client_id": "ID do Cliente",
-                    "host": "Host",
-                    "port": "Porta",
-                    "add_leds": "Adicionar LEDs individuais"
+                    "host": "Anfitri\u00e3o",
+                    "name": "Nome",
+                    "port": "Porta"
                 },
-                "description": "Configure os detalhes da ligação.",
-                "title": "OpenRGB"
+                "data_description": {
+                    "host": "O endere\u00e7o IP ou nome do anfitri\u00e3o do computador que executa o servidor OpenRGB SDK.",
+                    "name": "Um nome para esta entrada de integra\u00e7\u00e3o, como o nome do computador que executa o servidor OpenRGB SDK.",
+                    "port": "O n\u00famero da porta em que o servidor OpenRGB SDK est\u00e1 a ser executado."
+                },
+                "description": "Configure o seu servidor OpenRGB SDK para permitir o controlo a partir do Home Assistant.",
+                "title": "Configurar o servidor OpenRGB SDK"
             }
         }
     },
-    "options": {
-        "abort": {
-            "already_configured": "O serviço já se encontra configurado",
-            "conn_error": "Não foi possível estabelecer ligação."
+    "entity": {
+        "light": {
+            "openrgb_light": {
+                "state_attributes": {
+                    "effect": {
+                        "state": {
+                            "breathing": "Respira\u00e7\u00e3o",
+                            "chase": "Perseguir",
+                            "chase_fade": "Desvanecimento de persegui\u00e7\u00e3o",
+                            "cram": "Abarrotar",
+                            "flashing": "Intermitente",
+                            "music": "M\u00fasica",
+                            "neon": "N\u00e9on",
+                            "rainbow": "Arco-\u00edris",
+                            "random": "Aleat\u00f3rio",
+                            "random_flicker": "Cintila\u00e7\u00e3o aleat\u00f3ria",
+                            "scan": "Varredura",
+                            "spectrum_cycle": "Ciclo do espetro",
+                            "spring": "Mola",
+                            "stack": "Pilha",
+                            "strobe": "Estrobosc\u00f3pio",
+                            "water": "\u00c1gua",
+                            "wave": "Onda"
+                        }
+                    }
+                }
+            }
         },
-        "error": {
-            "cannot_connect": "Não foi possível estabelecer ligação",
-            "unknown": "Erro desconhecido"
-        },
-        "flow_title": "Configuração do OpenRGB",
-        "step": {
-            "user": {
-                "data": {
-                    "client_id": "ID do Cliente",
-                    "host": "Host",
-                    "port": "Porta",
-                    "add_leds": "Adicionar LEDs individuais"
-                },
-                "description": "Configure os detalhes da ligação.",
-                "title": "OpenRGB"
+        "select": {
+            "profile": {
+                "name": "Perfil"
             }
         }
     },
-    "title": "OpenRGB"
+    "exceptions": {
+        "cannot_connect": {
+            "message": "Falha na liga\u00e7\u00e3o ao servidor OpenRGB SDK {server_address}: {error}"
+        },
+        "communication_error": {
+            "message": "Falha na comunica\u00e7\u00e3o com o servidor OpenRGB SDK {server_address}: {error}"
+        },
+        "effect_no_color_support": {
+            "message": "O efeito `{effect}` n\u00e3o suporta o controlo de cores em {device_name}"
+        },
+        "openrgb_error": {
+            "message": "Ocorreu um erro OpenRGB: {error}"
+        },
+        "profile_not_found": {
+            "message": "Perfil `{profile}` n\u00e3o encontrado"
+        },
+        "unsupported_effect": {
+            "message": "O efeito `{effect}` n\u00e3o \u00e9 suportado por {device_name}"
+        }
+    }
 }

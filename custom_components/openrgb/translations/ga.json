@@ -1,0 +1,94 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "T\u00e1 an gl\u00e9as cumraithe cheana f\u00e9in"
+        },
+        "error": {
+            "cannot_connect": "Theip ar an nascadh",
+            "invalid_host": "Ainm \u00f3stach n\u00f3 seoladh IP neamhbhail\u00ed",
+            "unknown": "Earr\u00e1id gan choinne"
+        },
+        "step": {
+            "reconfigure": {
+                "data": {
+                    "host": "\u00d3stach",
+                    "port": "Port"
+                },
+                "data_description": {
+                    "host": "Seoladh IP n\u00f3 ainm \u00f3stach an r\u00edomhaire a bhfuil an freastala\u00ed OpenRGB SDK \u00e1 rith aige.",
+                    "port": "An uimhir phoirt ar a bhfuil an freastala\u00ed OpenRGB SDK ag rith."
+                },
+                "description": "Nuashonraigh na socruithe nasc do do fhreastala\u00ed OpenRGB SDK.",
+                "title": "Athchumraigh freastala\u00ed SDK OpenRGB"
+            },
+            "user": {
+                "data": {
+                    "host": "\u00d3stach",
+                    "name": "Ainm",
+                    "port": "Port"
+                },
+                "data_description": {
+                    "host": "Seoladh IP n\u00f3 ainm \u00f3stach an r\u00edomhaire a bhfuil an freastala\u00ed OpenRGB SDK \u00e1 rith aige.",
+                    "name": "Ainm don iontr\u00e1il chomhth\u00e1thaithe seo, cos\u00fail le hainm an r\u00edomhaire ina bhfuil an freastala\u00ed OpenRGB SDK \u00e1 rith.",
+                    "port": "An uimhir phoirt ar a bhfuil an freastala\u00ed OpenRGB SDK ag rith."
+                },
+                "description": "Socraigh do fhreastala\u00ed SDK OpenRGB chun rial\u00fa a chead\u00fa \u00f3 laistigh de Home Assistant.",
+                "title": "Socraigh freastala\u00ed SDK OpenRGB"
+            }
+        }
+    },
+    "entity": {
+        "light": {
+            "openrgb_light": {
+                "state_attributes": {
+                    "effect": {
+                        "state": {
+                            "breathing": "An\u00e1l\u00fa",
+                            "chase": "Ruaig",
+                            "chase_fade": "C\u00e9imni\u00fa sa t\u00f3ir",
+                            "cram": "Cram",
+                            "flashing": "Ag splancadh",
+                            "music": "Ceol",
+                            "neon": "Neon",
+                            "rainbow": "Bogha ceatha",
+                            "random": "Randamach",
+                            "random_flicker": "Briseadh randamach",
+                            "scan": "Scanadh",
+                            "spectrum_cycle": "Timthriall speictrim",
+                            "spring": "Earrach",
+                            "stack": "Cruach",
+                            "strobe": "Strob",
+                            "water": "Uisce",
+                            "wave": "Tonn"
+                        }
+                    }
+                }
+            }
+        },
+        "select": {
+            "profile": {
+                "name": "Pr\u00f3if\u00edl"
+            }
+        }
+    },
+    "exceptions": {
+        "cannot_connect": {
+            "message": "Theip ar cheangal le freastala\u00ed SDK OpenRGB {server_address}: {error}"
+        },
+        "communication_error": {
+            "message": "Theip ar chumars\u00e1id le freastala\u00ed SDK OpenRGB {server_address}: {error}"
+        },
+        "effect_no_color_support": {
+            "message": "N\u00ed thaca\u00edonn \u00e9ifeacht `{effect}` le rial\u00fa datha ar {device_name}"
+        },
+        "openrgb_error": {
+            "message": "Tharla earr\u00e1id OpenRGB: {error}"
+        },
+        "profile_not_found": {
+            "message": "N\u00edor aims\u00edodh pr\u00f3if\u00edl `{profile}`"
+        },
+        "unsupported_effect": {
+            "message": "N\u00ed thaca\u00edonn {device_name} le h\u00e9ifeacht `{effect}`"
+        }
+    }
+}

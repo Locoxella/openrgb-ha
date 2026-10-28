@@ -1,0 +1,14 @@
+{
+    "entity": {
+        "select": {
+            "profile": {
+                "name": "Profilo"
+            }
+        }
+    },
+    "exceptions": {
+        "profile_not_found": {
+            "message": "Profilo `{profile}` non trovato"
+        }
+    }
+}

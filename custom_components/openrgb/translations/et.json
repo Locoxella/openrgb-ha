@@ -1,0 +1,94 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Seade on juba h\u00e4\u00e4lestatud"
+        },
+        "error": {
+            "cannot_connect": "\u00dchendamine nurjus",
+            "invalid_host": "Sobimatu hostinimi v\u00f5i IP-aadress",
+            "unknown": "Ootamatu t\u00f5rge"
+        },
+        "step": {
+            "reconfigure": {
+                "data": {
+                    "host": "Host",
+                    "port": "Port"
+                },
+                "data_description": {
+                    "host": "OpenRGB SDK serverit k\u00e4itava arvuti IP-aadress v\u00f5i hostinimi.",
+                    "port": "Pordi number millel OpenRGB SDK server t\u00f6\u00f6tab."
+                },
+                "description": "V\u00e4rskendage oma OpenRGB SDK serveri \u00fchenduss\u00e4tteid.",
+                "title": "OpenRGB SDK serveri \u00fcmberseadistamine"
+            },
+            "user": {
+                "data": {
+                    "host": "Host",
+                    "name": "Nimi",
+                    "port": "Port"
+                },
+                "data_description": {
+                    "host": "OpenRGB SDK serverit k\u00e4itava arvuti IP-aadress v\u00f5i hostinimi.",
+                    "name": "Selle integratsioonikirje nimi, n\u00e4iteks OpenRGB SDK serverit k\u00e4itava arvuti nimi.",
+                    "port": "Pordi number millel OpenRGB SDK server t\u00f6\u00f6tab."
+                },
+                "description": "Seadista OpenRGB SDK server nii, et see v\u00f5imaldaks juhtimist Home Assistantist.",
+                "title": "OpenRGB SDK serveri seadistamine"
+            }
+        }
+    },
+    "entity": {
+        "light": {
+            "openrgb_light": {
+                "state_attributes": {
+                    "effect": {
+                        "state": {
+                            "breathing": "Hingamine",
+                            "chase": "Tagaajamine",
+                            "chase_fade": "Tagaajamise tuhmumine",
+                            "cram": "Cram",
+                            "flashing": "Vilkuv",
+                            "music": "Muusika",
+                            "neon": "Neoon",
+                            "rainbow": "Vikerkaar",
+                            "random": "Juhuslik",
+                            "random_flicker": "Juhuslik v\u00e4relus",
+                            "scan": "Skannimine",
+                            "spectrum_cycle": "Spektri ts\u00fckkel",
+                            "spring": "Vedru",
+                            "stack": "Pinu",
+                            "strobe": "Stroboskoop",
+                            "water": "Vesi",
+                            "wave": "Laine"
+                        }
+                    }
+                }
+            }
+        },
+        "select": {
+            "profile": {
+                "name": "Profiil"
+            }
+        }
+    },
+    "exceptions": {
+        "cannot_connect": {
+            "message": "OpenRGB SDK serveriga ei \u00f5nnestunud \u00fchendust luua {server_address}: {error}"
+        },
+        "communication_error": {
+            "message": "OpenRGB SDK serveriga {server_address} ei \u00f5nnestunud \u00fchendust luua : {error}"
+        },
+        "effect_no_color_support": {
+            "message": "Efekt `{effect}` ei toeta seadmel {device_name} v\u00e4rvikontrolli"
+        },
+        "openrgb_error": {
+            "message": "Ilmnes OpenRGB t\u00f5rge: {error}"
+        },
+        "profile_not_found": {
+            "message": "Profiili `{profile}` ei leitud"
+        },
+        "unsupported_effect": {
+            "message": "Efekti ` {effect} ` ei toetata seadmes {device_name}"
+        }
+    }
+}

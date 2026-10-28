@@ -1,0 +1,94 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Za\u0159\u00edzen\u00ed je ji\u017e nastaveno"
+        },
+        "error": {
+            "cannot_connect": "Nepoda\u0159ilo se p\u0159ipojit",
+            "invalid_host": "Neplatn\u00fd hostitel nebo IP adresa",
+            "unknown": "Neo\u010dek\u00e1van\u00e1 chyba"
+        },
+        "step": {
+            "reconfigure": {
+                "data": {
+                    "host": "Hostitel",
+                    "port": "Port"
+                },
+                "data_description": {
+                    "host": "IP adresa nebo n\u00e1zev hostitele po\u010d\u00edta\u010de, na kter\u00e9m b\u011b\u017e\u00ed server OpenRGB SDK.",
+                    "port": "\u010c\u00edslo portu, na kter\u00e9m b\u011b\u017e\u00ed server OpenRGB SDK."
+                },
+                "description": "Aktualizujte nastaven\u00ed p\u0159ipojen\u00ed pro v\u00e1\u0161 server OpenRGB SDK.",
+                "title": "P\u0159enastavit server OpenRGB SDK"
+            },
+            "user": {
+                "data": {
+                    "host": "Hostitel",
+                    "name": "N\u00e1zev",
+                    "port": "Port"
+                },
+                "data_description": {
+                    "host": "IP adresa nebo n\u00e1zev hostitele po\u010d\u00edta\u010de, na kter\u00e9m b\u011b\u017e\u00ed server OpenRGB SDK.",
+                    "name": "N\u00e1zev pro tuto polo\u017eku integrace; nap\u0159\u00edklad n\u00e1zev po\u010d\u00edta\u010de, na kter\u00e9m b\u011b\u017e\u00ed server OpenRGB SDK.",
+                    "port": "\u010c\u00edslo portu, na kter\u00e9m b\u011b\u017e\u00ed server OpenRGB SDK."
+                },
+                "description": "Nastavte server OpenRGB SDK tak, aby umo\u017e\u0148oval ovl\u00e1d\u00e1n\u00ed z Home Assistanta.",
+                "title": "Nastavit server OpenRGB SDK"
+            }
+        }
+    },
+    "entity": {
+        "light": {
+            "openrgb_light": {
+                "state_attributes": {
+                    "effect": {
+                        "state": {
+                            "breathing": "D\u00fdch\u00e1n\u00ed",
+                            "chase": "Pron\u00e1sledov\u00e1n\u00ed",
+                            "chase_fade": "Pron\u00e1sledov\u00e1n\u00ed do ztracena",
+                            "cram": "Cpan\u00ed",
+                            "flashing": "Z\u00e1blesky",
+                            "music": "Hudba",
+                            "neon": "Neon",
+                            "rainbow": "Duha",
+                            "random": "N\u00e1hodn\u011b",
+                            "random_flicker": "N\u00e1hodn\u00e9 blik\u00e1n\u00ed",
+                            "scan": "Skenov\u00e1n\u00ed",
+                            "spectrum_cycle": "Cyklus spektra",
+                            "spring": "Pru\u017eina",
+                            "stack": "Skl\u00e1d\u00e1n\u00ed",
+                            "strobe": "Stroboskop",
+                            "water": "Voda",
+                            "wave": "Vlna"
+                        }
+                    }
+                }
+            }
+        },
+        "select": {
+            "profile": {
+                "name": "Profil"
+            }
+        }
+    },
+    "exceptions": {
+        "cannot_connect": {
+            "message": "Nepoda\u0159ilo se p\u0159ipojit k serveru OpenRGB SDK {server_address}: {error}"
+        },
+        "communication_error": {
+            "message": "Nepoda\u0159ilo se komunikovat se serverem OpenRGB SDK {server_address}: {error}"
+        },
+        "effect_no_color_support": {
+            "message": "Efekt \"{effect}\" nepodporuje ovl\u00e1d\u00e1n\u00ed barev na {device_name}"
+        },
+        "openrgb_error": {
+            "message": "Do\u0161lo k chyb\u011b OpenRGB: {error}"
+        },
+        "profile_not_found": {
+            "message": "Profil \"{profile}\" nebyl nalezen"
+        },
+        "unsupported_effect": {
+            "message": "Efekt \"{effect}\" nen\u00ed za\u0159\u00edzen\u00edm {device_name} podporov\u00e1n."
+        }
+    }
+}

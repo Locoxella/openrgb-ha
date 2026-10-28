@@ -1,0 +1,94 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Enheten \u00e4r redan konfigurerad"
+        },
+        "error": {
+            "cannot_connect": "Misslyckades med att ansluta",
+            "invalid_host": "Ogiltigt v\u00e4rdnamn eller IP adress",
+            "unknown": "Ov\u00e4ntat fel"
+        },
+        "step": {
+            "reconfigure": {
+                "data": {
+                    "host": "V\u00e4rd",
+                    "port": "Port"
+                },
+                "data_description": {
+                    "host": "IP adressen eller v\u00e4rdnamnet f\u00f6r datorn som k\u00f6r OpenRGB SDK servern.",
+                    "port": "Portnumret som OpenRGB SDK servern k\u00f6rs p\u00e5."
+                },
+                "description": "Uppdatera anslutningsinst\u00e4llningarna f\u00f6r din OpenRGB SDK server.",
+                "title": "Konfigurera om OpenRGB SDK servern"
+            },
+            "user": {
+                "data": {
+                    "host": "V\u00e4rd",
+                    "name": "Namn",
+                    "port": "Port"
+                },
+                "data_description": {
+                    "host": "IP adressen eller v\u00e4rdnamnet f\u00f6r datorn som k\u00f6r OpenRGB SDK servern.",
+                    "name": "Ett namn f\u00f6r den h\u00e4r integrationsposten, som namnet p\u00e5 datorn som k\u00f6r OpenRGB SDK servern.",
+                    "port": "Portnumret som OpenRGB SDK servern k\u00f6rs p\u00e5."
+                },
+                "description": "Konfigurera din OpenRGB SDK server f\u00f6r att till\u00e5ta kontroll inifr\u00e5n Home Assistant.",
+                "title": "installera OpenRGB SDK server"
+            }
+        }
+    },
+    "entity": {
+        "light": {
+            "openrgb_light": {
+                "state_attributes": {
+                    "effect": {
+                        "state": {
+                            "breathing": "Andas",
+                            "chase": "Jaga",
+                            "chase_fade": "Jaga blekna",
+                            "cram": "Plugga",
+                            "flashing": "Blinkande",
+                            "music": "Musik",
+                            "neon": "Neon",
+                            "rainbow": "Regnb\u00e5ge",
+                            "random": "Slumpm\u00e4ssig",
+                            "random_flicker": "Slumpm\u00e4ssig flimmer",
+                            "scan": "Skanna",
+                            "spectrum_cycle": "Spektrumcykel",
+                            "spring": "Fj\u00e4dra",
+                            "stack": "Stack",
+                            "strobe": "Strobe",
+                            "water": "Vatten",
+                            "wave": "V\u00e5g"
+                        }
+                    }
+                }
+            }
+        },
+        "select": {
+            "profile": {
+                "name": "Profil"
+            }
+        }
+    },
+    "exceptions": {
+        "cannot_connect": {
+            "message": "Det gick inte att ansluta till OpenRGB SDK-servern {server_address}: {error}"
+        },
+        "communication_error": {
+            "message": "Misslyckades med att kommunicera med OpenRGB SDK servern {server_address}: {error}"
+        },
+        "effect_no_color_support": {
+            "message": "Effekten `{effect}` st\u00f6der inte f\u00e4rgkontroll p\u00e5 {device_name}"
+        },
+        "openrgb_error": {
+            "message": "Ett OpenRGB fel uppstod: {error}"
+        },
+        "profile_not_found": {
+            "message": "Profil `{profile}` hittades inte"
+        },
+        "unsupported_effect": {
+            "message": "Effekten `{effect}` st\u00f6ds inte av {device_name}"
+        }
+    }
+}

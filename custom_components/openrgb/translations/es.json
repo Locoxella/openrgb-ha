@@ -1,0 +1,94 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "El dispositivo ya est\u00e1 configurado"
+        },
+        "error": {
+            "cannot_connect": "No se pudo conectar",
+            "invalid_host": "Nombre de host o direcci\u00f3n IP no v\u00e1lidos",
+            "unknown": "Error inesperado"
+        },
+        "step": {
+            "reconfigure": {
+                "data": {
+                    "host": "Host",
+                    "port": "Puerto"
+                },
+                "data_description": {
+                    "host": "La direcci\u00f3n IP o el nombre de host del ordenador que ejecuta el servidor OpenRGB SDK.",
+                    "port": "El n\u00famero de puerto en el que se ejecuta el servidor OpenRGB SDK."
+                },
+                "description": "Actualiza la configuraci\u00f3n de conexi\u00f3n para tu servidor OpenRGB SDK.",
+                "title": "Volver a configurar el servidor OpenRGB SDK"
+            },
+            "user": {
+                "data": {
+                    "host": "Host",
+                    "name": "Nombre",
+                    "port": "Puerto"
+                },
+                "data_description": {
+                    "host": "La direcci\u00f3n IP o el nombre de host del ordenador que ejecuta el servidor OpenRGB SDK.",
+                    "name": "Un nombre para esta entrada de integraci\u00f3n, como el nombre del ordenador que ejecuta el servidor OpenRGB SDK.",
+                    "port": "El n\u00famero de puerto en el que se ejecuta el servidor OpenRGB SDK."
+                },
+                "description": "Configura tu servidor SDK OpenRGB para permitir el control desde Home Assistant.",
+                "title": "Configurar el servidor OpenRGB SDK"
+            }
+        }
+    },
+    "entity": {
+        "light": {
+            "openrgb_light": {
+                "state_attributes": {
+                    "effect": {
+                        "state": {
+                            "breathing": "Respiraci\u00f3n",
+                            "chase": "Persecuci\u00f3n",
+                            "chase_fade": "Desvanecimiento de persecuci\u00f3n",
+                            "cram": "Atestar",
+                            "flashing": "Intermitente",
+                            "music": "M\u00fasica",
+                            "neon": "Ne\u00f3n",
+                            "rainbow": "Arco\u00edris",
+                            "random": "Aleatorio",
+                            "random_flicker": "Parpadeo aleatorio",
+                            "scan": "Escanear",
+                            "spectrum_cycle": "Ciclo del espectro",
+                            "spring": "Resorte",
+                            "stack": "Pila",
+                            "strobe": "Estrobosc\u00f3pico",
+                            "water": "Agua",
+                            "wave": "Ola"
+                        }
+                    }
+                }
+            }
+        },
+        "select": {
+            "profile": {
+                "name": "Perfil"
+            }
+        }
+    },
+    "exceptions": {
+        "cannot_connect": {
+            "message": "No se pudo conectar con el servidor {server_address} del SDK de OpenRGB: {error}"
+        },
+        "communication_error": {
+            "message": "No se pudo comunicar con el servidor OpenRGB SDK {server_address}: {error}"
+        },
+        "effect_no_color_support": {
+            "message": "El efecto `{effect}` no admite el control de color en {device_name}"
+        },
+        "openrgb_error": {
+            "message": "Se produjo un error de OpenRGB: {error}"
+        },
+        "profile_not_found": {
+            "message": "Perfil `{profile}` no encontrado"
+        },
+        "unsupported_effect": {
+            "message": "El efecto `{effect}` no es compatible con {device_name}"
+        }
+    }
+}

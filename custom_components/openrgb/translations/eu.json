@@ -1,0 +1,56 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Gailua dagoeneko konfiguratuta dago"
+        },
+        "error": {
+            "cannot_connect": "Konexioak huts egin du",
+            "invalid_host": "Ostalari-izen edo IP helbide baliogabea",
+            "unknown": "Ustekabeko errorea"
+        },
+        "step": {
+            "reconfigure": {
+                "data": {
+                    "host": "Ostalari",
+                    "port": "Ataka"
+                },
+                "data_description": {
+                    "host": "OpenRGB SDK zerbitzaria martxan duen ordenagailuaren IP helbide edo ostalari-izena."
+                }
+            },
+            "user": {
+                "data": {
+                    "host": "Ostalari",
+                    "name": "Izena",
+                    "port": "Ataka"
+                },
+                "data_description": {
+                    "host": "OpenRGB SDK zerbitzaria martxan duen ordenagailuaren IP helbide edo ostalari-izena."
+                }
+            }
+        }
+    },
+    "entity": {
+        "light": {
+            "openrgb_light": {
+                "state_attributes": {
+                    "effect": {
+                        "state": {
+                            "water": "Ura"
+                        }
+                    }
+                }
+            }
+        },
+        "select": {
+            "profile": {
+                "name": "Profila"
+            }
+        }
+    },
+    "exceptions": {
+        "cannot_connect": {
+            "message": "{server_address} OpenRGB SDK zerbitzarira konektatzeak huts egin du: {error}"
+        }
+    }
+}

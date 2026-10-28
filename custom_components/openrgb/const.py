@@ -1,35 +1,67 @@
 """Constants for the OpenRGB integration."""
 
 from datetime import timedelta
+from enum import StrEnum
+import socket
+
+from openrgb.utils import (
+    ControllerParsingError,
+    DeviceType,
+    OpenRGBDisconnected,
+    SDKVersionError,
+)
 
 DOMAIN = "openrgb"
-CONFIG_VERSION = 2
 
-ORGB_DATA = "openrgb_data"
-ORGB_TRACKER = "openrgb_tracker"
-ORGB_DISCOVERY_NEW = "openrgb_discovery_new_{}"
+UID_SEPARATOR = "||"
 
-SERVICE_FORCE_UPDATE = "force_update"
-SERVICE_PULL_DEVICES = "pull_devices"
-SERVICE_LOAD_PROFILE = "load_profile"
-
-ATTR_PROFILE = "profile"
-
-ENTRY_IS_SETUP = "openrgb_entry_is_setup"
-
-SIGNAL_DELETE_ENTITY = "openrgb_delete"
-SIGNAL_UPDATE_ENTITY = "openrgb_update"
-
-TRACK_INTERVAL = timedelta(seconds=30)
-
-CONF_ADD_LEDS = "add_leds"
-
+# Defaults
 DEFAULT_PORT = 6742
-DEFAULT_CLIENT_ID = "Home Assistant"
-DEFAULT_ADD_LEDS = False
+DEFAULT_CLIENT_NAME = "Home Assistant"
 
-CONN_TIMEOUT = 5.0
+# Update interval
+SCAN_INTERVAL = timedelta(seconds=15)
 
-EFFECT_DIRECT = "Direct"
-EFFECT_OFF = "Off"
-EFFECT_STATIC = "Static"
+DEFAULT_COLOR = (255, 255, 255)
+DEFAULT_BRIGHTNESS = 255
+OFF_COLOR = (0, 0, 0)
+
+
+class OpenRGBMode(StrEnum):
+    """OpenRGB modes."""
+
+    OFF = "Off"
+    STATIC = "Static"
+    DIRECT = "Direct"
+    CUSTOM = "Custom"
+
+
+EFFECT_OFF_OPENRGB_MODES = {OpenRGBMode.STATIC, OpenRGBMode.DIRECT, OpenRGBMode.CUSTOM}
+
+DEVICE_TYPE_ICONS: dict[DeviceType, str] = {
+    DeviceType.MOTHERBOARD: "mdi:developer-board",
+    DeviceType.DRAM: "mdi:memory",
+    DeviceType.GPU: "mdi:expansion-card",
+    DeviceType.COOLER: "mdi:fan",
+    DeviceType.LEDSTRIP: "mdi:led-variant-on",
+    DeviceType.KEYBOARD: "mdi:keyboard",
+    DeviceType.MOUSE: "mdi:mouse",
+    DeviceType.MOUSEMAT: "mdi:rug",
+    DeviceType.HEADSET: "mdi:headset",
+    DeviceType.HEADSET_STAND: "mdi:headset-dock",
+    DeviceType.GAMEPAD: "mdi:gamepad-variant",
+    DeviceType.SPEAKER: "mdi:speaker",
+    DeviceType.STORAGE: "mdi:harddisk",
+    DeviceType.CASE: "mdi:desktop-tower",
+    DeviceType.MICROPHONE: "mdi:microphone",
+    DeviceType.KEYPAD: "mdi:dialpad",
+}
+
+CONNECTION_ERRORS = (
+    ConnectionRefusedError,
+    OpenRGBDisconnected,
+    ControllerParsingError,
+    TimeoutError,
+    socket.gaierror,  # DNS errors
+    SDKVersionError,  # The OpenRGB SDK server version is incompatible with the client
+)

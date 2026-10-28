@@ -1,41 +1,43 @@
-> [!IMPORTANT]
-> This integration is archived now that Home Assistant has an [official OpenRGB integration](https://www.home-assistant.io/integrations/openrgb/).
+# OpenRGB Home Assistant Custom Fork
 
-# OpenRGB integration for Home Assistant
+This repository provides an enhanced, HACS-compatible custom component for **OpenRGB** in Home Assistant, maintaining parity with official Home Assistant Core integration updates while fixing peripheral disconnect/reconnect and entity duplication bugs.
 
-## Pre-requisites
+---
 
-1. OpenRGB installed.
-1. Its _SDK Server_ component enabled.
-1. No firewall blocking the connection between Home Assistant and OpenRGB.
-   1. For example, make sure your Ethernet or Wi-Fi network connection is set as _Private_ in Windows.
+## 🛠 Customizations & Problem Solved
 
-## Installation
+### 1. Razer & Asus Device Reconnection Bug (`stable_location`)
+- **The Issue**: In the official Home Assistant Core OpenRGB component, dynamic paths (e.g. `HID: /dev/hidraw24`) are replaced with stable keys (`hid_0`) **only** when a valid hardware serial number is reported. Peripherals like the **Razer Deathadder V2 Pro (Wireless)** or wireless dongles frequently drop their serial metadata upon entering sleep mode or waking up, causing OpenRGB to report `serial: "none"`.
+- **The Result**: On every wake/sleep cycle or reboot, Home Assistant generated a brand new device and entity (e.g., `light.razer_deathadder_v2_pro_wireless_2`, `_3`, etc.).
+- **The Fix**:
+  - `stable_location` in `coordinator.py` and `__init__.py` now explicitly protects devices from vendors like `Razer` and `Asus` even when the serial is blank or `"none"`.
+  - Serial numbers in `light.py` (`DeviceInfo`) are normalized and sanitized.
+  - An automatic registry cleaner cleans up any obsolete dynamic `HID: /dev/...` duplicate devices during setup.
 
-The easiest install is via [HACS](https://hacs.xyz):
+### 2. UnicodeDecodeError Protection
+- Robust monkeypatch for `openrgb.utils.parse_string` to guard against corrupt/non-UTF8 metadata sent by certain RGB controllers without crashing the integration.
 
-[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=openrgb-ha&repository=openrgb-ha&category=integration)
+---
 
-1. Click the button above, and install this integration via HACS.
-1. Restart Home Assistant.
+## 🔄 Branch Architecture & Release Workflow
 
-Then click the button below to configure the integration in your Home Assistant instance:
+Following our **`xtend_tuya`** workflow conventions:
 
-[![Open your Home Assistant instance and start setting up a new integration.](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=openrgb)
+- **Upstream Source**: `home-assistant/core` (`homeassistant/components/openrgb/`).
+- **Target Branch**: `feature/hardware-stability` (our active working branch).
+- **Versioning Scheme**: `${HA_CORE_VERSION}-custom.${PATCH_NUM}` (e.g. `2026.10.4-custom.1`).
+- **Automated Workflow (`.github/workflows/auto_sync_release.yml`)**:
+  - Runs automatically on schedule (every 6 hours) or via `workflow_dispatch`.
+  - Detects new Home Assistant Core stable tags.
+  - Preserves local hardware stability patches.
+  - Updates `manifest.json` with the lexicographically safe version tag.
+  - Packages the component and publishes a GitHub Release with `openrgb.zip` for HACS.
 
-## Configuration
+---
 
-### Options
+## 📦 HACS Installation
 
-This integration can only be configuration through the UI (_Configuration_ -> _Devices & services_), and the options below can be configured when the integration is added.
-
-| key       | default        | required | description                                     |
-| --------- | -------------- | -------- | ----------------------------------------------- |
-| host      | localhost      | yes      | The host or IP where OpenRGB is running         |
-| port      | 6742           | yes      | The port on which the Server SDK is listening   |
-| client_id | Home Assistant | no       | The Client ID that will be displayed in OpenRGB |
-
-## Credits
-
-- This custom component is a follow-up to https://github.com/home-assistant/core/pull/38309 by @bahorn, which didn't make it to HA Core.
-- This integration uses [openrgb-python](https://github.com/jath03/openrgb-python), by @jath03.
+1. In Home Assistant, open **HACS** > **Integrations** > **Custom repositories**.
+2. Add `https://github.com/Locoxella/openrgb-ha` with category **Integration**.
+3. Download the release (version will display as `2026.10.x-custom.y`).
+4. Restart Home Assistant or reload the OpenRGB integration.

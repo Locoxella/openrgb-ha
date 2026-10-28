@@ -1,0 +1,94 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Cihaz zaten yap\u0131land\u0131r\u0131lm\u0131\u015f"
+        },
+        "error": {
+            "cannot_connect": "Ba\u011flanma hatas\u0131",
+            "invalid_host": "Ge\u00e7ersiz ana bilgisayar ad\u0131 veya IP adresi",
+            "unknown": "Beklenmeyen hata"
+        },
+        "step": {
+            "reconfigure": {
+                "data": {
+                    "host": "Sunucu",
+                    "port": "Ba\u011flant\u0131 Noktas\u0131"
+                },
+                "data_description": {
+                    "host": "OpenRGB SDK sunucusunu \u00e7al\u0131\u015ft\u0131ran bilgisayar\u0131n IP adresi veya ana bilgisayar ad\u0131.",
+                    "port": "OpenRGB SDK sunucusunun \u00e7al\u0131\u015ft\u0131\u011f\u0131 port numaras\u0131."
+                },
+                "description": "OpenRGB SDK sunucunuzun ba\u011flant\u0131 ayarlar\u0131n\u0131 g\u00fcncelleyin.",
+                "title": "OpenRGB SDK sunucusunu yeniden yap\u0131land\u0131r\u0131n"
+            },
+            "user": {
+                "data": {
+                    "host": "Sunucu",
+                    "name": "Ad",
+                    "port": "Ba\u011flant\u0131 Noktas\u0131"
+                },
+                "data_description": {
+                    "host": "OpenRGB SDK sunucusunu \u00e7al\u0131\u015ft\u0131ran bilgisayar\u0131n IP adresi veya ana bilgisayar ad\u0131.",
+                    "name": "Bu entegrasyon giri\u015fi i\u00e7in bir ad, \u00f6rne\u011fin OpenRGB SDK sunucusunu \u00e7al\u0131\u015ft\u0131ran bilgisayar\u0131n ad\u0131.",
+                    "port": "OpenRGB SDK sunucusunun \u00e7al\u0131\u015ft\u0131\u011f\u0131 port numaras\u0131."
+                },
+                "description": "Home Assistant i\u00e7inden kontrole izin vermek i\u00e7in OpenRGB SDK sunucunuzu ayarlay\u0131n.",
+                "title": "OpenRGB SDK sunucusunu kurun"
+            }
+        }
+    },
+    "entity": {
+        "light": {
+            "openrgb_light": {
+                "state_attributes": {
+                    "effect": {
+                        "state": {
+                            "breathing": "Nefes al",
+                            "chase": "Takip et",
+                            "chase_fade": "Kovalamaca solma",
+                            "cram": "T\u0131k\u0131nma",
+                            "flashing": "Yan\u0131p s\u00f6nen",
+                            "music": "M\u00fczik",
+                            "neon": "Neon",
+                            "rainbow": "G\u00f6kku\u015fa\u011f\u0131",
+                            "random": "Rastgele",
+                            "random_flicker": "Rastgele titre\u015fim",
+                            "scan": "Tarama",
+                            "spectrum_cycle": "Spektrum d\u00f6ng\u00fcs\u00fc",
+                            "spring": "\u0130lkbahar",
+                            "stack": "Y\u0131\u011f\u0131n",
+                            "strobe": "Fla\u015f\u00f6r",
+                            "water": "Su",
+                            "wave": "Dalga"
+                        }
+                    }
+                }
+            }
+        },
+        "select": {
+            "profile": {
+                "name": "Profil"
+            }
+        }
+    },
+    "exceptions": {
+        "cannot_connect": {
+            "message": "OpenRGB SDK sunucusuna ba\u011flan\u0131lamad\u0131. {server_address}: {error}"
+        },
+        "communication_error": {
+            "message": "OpenRGB SDK sunucusuyla ileti\u015fim kurulamad\u0131 {server_address}: {error}"
+        },
+        "effect_no_color_support": {
+            "message": "Etkisi `{effect}` renk denetimini desteklemiyor {device_name}"
+        },
+        "openrgb_error": {
+            "message": "Bir OpenRGB hatas\u0131 olu\u015ftu: {error}"
+        },
+        "profile_not_found": {
+            "message": "Profil `{profile}` bulunamad\u0131"
+        },
+        "unsupported_effect": {
+            "message": "Etkisi `{effect}` taraf\u0131ndan desteklenmiyor {device_name}"
+        }
+    }
+}

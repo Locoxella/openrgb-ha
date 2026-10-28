@@ -1,463 +1,426 @@
-"""Platform for OpenRGB Integration."""
+"""OpenRGB light platform."""
 
-import logging
+import asyncio
+from typing import Any, override
 
-import homeassistant.util.color as color_util
+from openrgb.orgb import Device
+from openrgb.utils import ModeColors, ModeData, RGBColor
 
-# Import the device class from the component that you want to support
 from homeassistant.components.light import (
     ATTR_BRIGHTNESS,
     ATTR_EFFECT,
-    ATTR_HS_COLOR,
+    ATTR_RGB_COLOR,
+    EFFECT_OFF,
     ColorMode,
     LightEntity,
     LightEntityFeature,
 )
-from homeassistant.components.light import (
-    DOMAIN as SENSOR_DOMAIN,
-)
-from homeassistant.core import callback
-from homeassistant.helpers import entity_registry as er
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.dispatcher import async_dispatcher_connect
-
-from openrgb import utils as RGBUtils
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import slugify
+from homeassistant.util.color import color_hs_to_RGB, color_RGB_to_hsv
 
 from .const import (
-    CONF_ADD_LEDS,
+    CONNECTION_ERRORS,
+    DEFAULT_BRIGHTNESS,
+    DEFAULT_COLOR,
+    DEVICE_TYPE_ICONS,
     DOMAIN,
-    EFFECT_DIRECT,
-    EFFECT_OFF,
-    EFFECT_STATIC,
-    ORGB_DISCOVERY_NEW,
-    SIGNAL_DELETE_ENTITY,
-    SIGNAL_UPDATE_ENTITY,
+    EFFECT_OFF_OPENRGB_MODES,
+    OFF_COLOR,
+    OpenRGBMode,
 )
-from .helpers import orgb_entity_id, orgb_icon, orgb_object_id, orgb_tuple
+from .coordinator import OpenRGBConfigEntry, OpenRGBCoordinator
 
-_LOGGER = logging.getLogger(__name__)
-
-
-async def async_setup_entry(hass, config_entry, async_add_entities):
-    """Set up OpenRGB devices dynamically."""
-
-    async def async_discover_sensor(entry_id, dev_ids):
-        """Discover and add a discovered openrgb sensor."""
-        if not dev_ids or entry_id != config_entry.entry_id:
-            return
-
-        entities = await hass.async_add_executor_job(
-            _setup_entities,
-            hass,
-            config_entry.entry_id,
-            dev_ids,
-            config_entry.data[CONF_ADD_LEDS]
-            if CONF_ADD_LEDS in config_entry.data
-            else False,
-        )
-        async_add_entities(entities, True)
-
-    async_dispatcher_connect(
-        hass, ORGB_DISCOVERY_NEW.format(SENSOR_DOMAIN), async_discover_sensor
-    )
-
-    device_ids = hass.data[DOMAIN][config_entry.entry_id]["pending"].pop(SENSOR_DOMAIN)
-    await async_discover_sensor(config_entry.entry_id, device_ids)
+PARALLEL_UPDATES = 0
 
 
-def _setup_entities(hass, entry_id, dev_ids, add_leds):
-    """Set up OpenRGB Light device."""
-    entities = []
-    for dev_id in dev_ids:
-        if dev_id is None:
-            continue
+async def async_setup_entry(
+    hass: HomeAssistant,
+    config_entry: OpenRGBConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
+) -> None:
+    """Set up the OpenRGB light platform."""
+    coordinator = config_entry.runtime_data
+    known_device_keys: set[str] = set()
 
-        entity_id = orgb_entity_id(dev_id)
-        ha_dev_unique_id = hass.data[DOMAIN][entry_id]["ha_dev_unique_id"]
-        device_unique_id = dev_id.metadata.serial
-        # Some devices don't have a serial defined, so fall back to OpenRGB id
-        if not device_unique_id:
-            device_unique_id = entity_id
-
-        if not hass.data[DOMAIN][entry_id]["entities"].get(device_unique_id, None):
-            entities.append(
-                OpenRGBDevice(
-                    hass, ha_dev_unique_id, entry_id, dev_id, device_unique_id
-                )
+    def _check_device() -> None:
+        """Add entities for newly discovered OpenRGB devices."""
+        nonlocal known_device_keys
+        current_keys = set(coordinator.data.keys())
+        new_keys = current_keys - known_device_keys
+        if new_keys:
+            known_device_keys.update(new_keys)
+            async_add_entities(
+                [OpenRGBLight(coordinator, device_key) for device_key in new_keys]
             )
 
-        if add_leds:
-            for led in dev_id.leds:
-                led_unique_id = f"{device_unique_id}_led_{led.id}"
-                if not hass.data[DOMAIN][entry_id]["entities"].get(led_unique_id, None):
-                    entities.append(
-                        OpenRGBLed(
-                            hass,
-                            ha_dev_unique_id,
-                            entry_id,
-                            dev_id,
-                            led.id,
-                            led_unique_id,
-                        )
-                    )
-    return entities
+    _check_device()
+    config_entry.async_on_unload(coordinator.async_add_listener(_check_device))
 
 
-class OpenRGBLight(LightEntity):
-    """Representation of a OpenRGB Device."""
+class OpenRGBLight(CoordinatorEntity[OpenRGBCoordinator], LightEntity):
+    """Representation of an OpenRGB light."""
 
-    def __init__(self, hass, ha_dev_id, entry_id):
-        """Initialize an OpenRGB light."""
-        self._hass = hass
-        self._ha_dev_id = ha_dev_id
-        self._entry_id = entry_id
-        self._callbacks = []
-        self._light = None
-        self._brightness: int = 255
-        self._prev_brightness: int = 255
-        self._hs_value: tuple[float, float] = (0.0, 0.0)
-        self._prev_hs_value: tuple[float, float] = (0.0, 0.0)
-        self._state: bool = True
-        self._assumed_state: bool = True
+    _attr_has_entity_name = True
+    _attr_name = None  # Use the device name
+    _attr_translation_key = "openrgb_light"
 
-    async def async_will_remove_from_hass(self):
-        """Cleanup signal handlers."""
-        for signal_callback in self._callbacks:
-            signal_callback()
+    _mode: str | None = None
 
-    # Device Properties
+    _supports_color_modes: list[str]
+    _preferred_no_effect_mode: str
+    _supports_off_mode: bool
+    _supports_effects: bool
 
-    @property
-    def object_id(self):
-        """Return the OpenRGB id."""
-        return orgb_object_id(self._light)
+    _previous_brightness: int | None = None
+    _previous_rgb_color: tuple[int, int, int] | None = None
+    _previous_mode: str | None = None
 
-    @property
-    def device_info(self) -> DeviceInfo:
-        return {
-            "identifiers": {
-                (DOMAIN, f"{self._ha_dev_id}_{orgb_entity_id(self._light)}")
-            },
-            "name": self._light.name,
-            "manufacturer": self._light.metadata.vendor,
-            "model": self._light.metadata.description,
-            "sw_version": self._light.metadata.version,
-        }
+    _update_events: list[asyncio.Event] = []
 
-    @property
-    def icon(self):
-        """Give this device an icon representing what it is."""
-        return "mdi:{}".format(orgb_icon(self._light.type))
+    _effect_to_mode: dict[str, str]
 
-    @property
-    def name(self):
-        """Return the display name of the light."""
-        return self._name
+    def __init__(self, coordinator: OpenRGBCoordinator, device_key: str) -> None:
+        """Initialize the OpenRGB light."""
+        super().__init__(coordinator)
+        self.device_key = device_key
+        self._attr_unique_id = device_key
 
-    @property
-    def available(self):
-        """Return if the device is online."""
-        return self.hass.data[DOMAIN][self._entry_id]["online"]
+        device_name = coordinator.get_device_name(device_key)
 
-    @property
-    def is_on(self):
-        """Return true if light is on."""
-        return self._state
+        serial = (self.device.metadata.serial or "").strip()
+        serial_number = serial if serial and serial != "none" else None
 
-    @property
-    def brightness(self):
-        """Return the brightness of this light between 0..255."""
-        return self._brightness
-
-    @property
-    def color_mode(self):
-        """Return the color mode of the light."""
-        return ColorMode.HS
-
-    @property
-    def supported_color_modes(self):
-        """Return a set of supported color modes."""
-        return {ColorMode.HS}
-
-    @property
-    def hs_color(self):
-        """Return the hue and saturation color value [float, float]."""
-        return self._hs_value
-
-    @property
-    def assumed_state(self):
-        """Return if the state is assumed."""
-        return self._assumed_state
-
-    # Public interfaces to control the device
-
-    def turn_on(self, **kwargs):
-        """Turn the device on, and set defaults."""
-        if ATTR_HS_COLOR in kwargs:
-            self._hs_value: tuple[float, float] = kwargs[ATTR_HS_COLOR]
-
-        if ATTR_BRIGHTNESS in kwargs:
-            self._brightness: int = kwargs[ATTR_BRIGHTNESS]
-
-        # Restore the state if the light just gets turned on
-        if not kwargs:
-            self._brightness = (
-                self._prev_brightness if self._prev_brightness > 0 else 255
-            )
-            self._hs_value = self._prev_hs_value
-
-        self._device_turned_on(**kwargs)
-
-        self._set_color()
-        self._state = True
-
-    def turn_off(self, **kwargs):
-        """Turn the device off."""
-        # prevent subsequent turn_off calls from erasing the previous state
-        if not self.is_on:
-            return
-
-        self._device_turned_off(**kwargs)
-
-        self._state = False
-
-    def _device_turned_on(self, **kwargs):
-        pass
-
-    def _device_turned_off(self, **kwargs):
-        pass
-
-    def _retrieve_current_name(self) -> str:
-        raise NotImplementedError
-
-    def _retrieve_current_hsv_color(self) -> tuple[float, float, float]:
-        raise NotImplementedError
-
-    def update(self):
-        """Single function to update the devices state."""
-        self._name = self._retrieve_current_name()
-        hsv_color = self._retrieve_current_hsv_color()
-        self._hs_value = (hsv_color[0], hsv_color[1])
-        self._brightness = int(255.0 * (hsv_color[2] / 100.0))
-
-        # Infer the state from the brightness
-        self._state = self._brightness > 0
-
-        # After updating, we no longer need to assume the state
-        self._assumed_state = False
-
-    def _set_color(self):
-        """Set the devices color using the library."""
-        raise NotImplementedError
-
-    # Callbacks
-    @callback
-    async def _delete_callback(self, dev_id):
-        """Remove this entity."""
-        if dev_id == self.entity_id:
-            entity_registry = er.async_get(self.hass)
-            if self._attr_unique_id and entity_registry.async_is_registered(
-                self._attr_unique_id
-            ):
-                entity_registry.async_remove(self._attr_unique_id)
-            else:
-                await self.async_remove()
-
-    @callback
-    async def _update_callback(self, dev_id=None):
-        self.async_schedule_update_ha_state(True)
-
-
-class OpenRGBDevice(OpenRGBLight):
-    """Representation of an OpenRGB Device."""
-
-    def __init__(self, hass, ha_dev_unique_id, entry_id, light, unique_id):
-        """Initialize an OpenRGB light."""
-        super().__init__(hass, ha_dev_unique_id, entry_id)
-        self._light = light
-        self._unique_id = unique_id
-        self._attr_unique_id = f"{ha_dev_unique_id}_{unique_id}"
-        self._name = self._retrieve_current_name()
-
-        self._effect = ""
-        self._prev_effect = self._light.modes[self._light.active_mode].name
-
-        self._effects = []
-
-    async def async_added_to_hass(self):
-        """Call when entity is added to hass."""
-        self.hass.data[DOMAIN][self._entry_id]["entities"][self._unique_id] = (
-            self._attr_unique_id
-        )
-        self._callbacks.append(
-            async_dispatcher_connect(
-                self.hass, SIGNAL_DELETE_ENTITY, self._delete_callback
-            )
-        )
-        self._callbacks.append(
-            async_dispatcher_connect(
-                self.hass, SIGNAL_UPDATE_ENTITY, self._update_callback
-            )
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, device_key)},
+            name=device_name,
+            manufacturer=self.device.metadata.vendor,
+            model=f"{self.device.metadata.description} ({self.device.type.name})",
+            sw_version=self.device.metadata.version,
+            serial_number=serial_number,
+            via_device_id=dr.async_get_device_id_by_identifier(
+                coordinator.hass,
+                (DOMAIN, coordinator.entry_id),
+                config_entry_id=coordinator.entry_id,
+            ),
         )
 
-    @property
-    def effect_list(self):
-        """Return the list of supported effects."""
-        return self._effects
+        modes = [mode.name for mode in self.device.modes]
 
-    @property
-    def effect(self):
-        """Return the current effect."""
-        return self._effect
-
-    @property
-    def supported_features(self):
-        """Return the supported features for this device."""
-        return LightEntityFeature.EFFECT
-
-    def _device_turned_on(self, **kwargs):
-        if ATTR_EFFECT in kwargs:
-            self._effect = kwargs.get(ATTR_EFFECT)
-
-        if not kwargs:
-            if self._prev_effect != EFFECT_OFF:
-                # restore the state
-                self._effect = self._prev_effect
-
-            if self._effect == EFFECT_OFF:
-                # If the light got initialized with the Off effect, switching
-                # the effect to Static or Direct is the best we can do.
-                if EFFECT_STATIC in [mode.name for mode in self._light.modes]:
-                    self._effect = EFFECT_STATIC
-                elif EFFECT_DIRECT in [mode.name for mode in self._light.modes]:
-                    self._effect = EFFECT_DIRECT
-                else:
-                    _LOGGER.warning(
-                        "The light %s could not be turned on because it does not support 'Static' or 'Direct' effects.",
-                        self._name,
-                    )
-                    return
-
-        self._set_effect()
-
-    def _device_turned_off(self, **kwargs):
-        if self._effect != EFFECT_OFF:
-            # preserve the state
-            self._prev_brightness = self._brightness
-            self._prev_hs_value = self._hs_value
-            self._prev_effect = self._effect
-
-            # Use the Off effect if available
-            if EFFECT_OFF in [mode.name for mode in self._light.modes]:
-                self._effect = EFFECT_OFF
-                self._set_effect()
-            else:
-                # Otherwise, turn brightness to 0
-                self._brightness = 0
-                self._set_color()
-
-    def _retrieve_current_name(self) -> str:
-        return f"{self._light.name} {self._light.device_id}"
-
-    def _retrieve_current_hsv_color(self) -> tuple[float, float, float]:
-        return color_util.color_RGB_to_hsv(*orgb_tuple(self._light.colors[0]))
-
-    def update(self):
-        super().update()
-
-        self._effect = self._light.modes[self._light.active_mode].name
-        self._effects = [
-            mode.name for mode in self._light.modes if mode.name != EFFECT_OFF
+        if self.device.metadata.description == "ASRock Polychrome USB Device":
+            # https://gitlab.com/CalcProgrammer1/OpenRGB/-/issues/5145
+            self._preferred_no_effect_mode = OpenRGBMode.STATIC
+        else:
+            # https://gitlab.com/CalcProgrammer1/OpenRGB/-/blob/c71cc4f18a54f83d388165ef2ab4c4ad3e980b89/RGBController/RGBController.cpp#L2075-2081
+            self._preferred_no_effect_mode = (
+                OpenRGBMode.DIRECT
+                if OpenRGBMode.DIRECT in modes
+                else OpenRGBMode.CUSTOM
+                if OpenRGBMode.CUSTOM in modes
+                else OpenRGBMode.STATIC
+            )
+        # Determine if the device supports being turned off through modes
+        self._supports_off_mode = OpenRGBMode.OFF in modes
+        # Determine which modes supports color
+        self._supports_color_modes = [
+            mode.name
+            for mode in self.device.modes
+            if check_if_mode_supports_color(mode)
         ]
 
-        # If the effect is Off, the light is off
-        if self._effect == EFFECT_OFF:
-            self._state = False
+        # Initialize effects from modes
+        self._effect_to_mode = {}
+        effects = []
+        for mode in modes:
+            if mode != OpenRGBMode.OFF and mode not in EFFECT_OFF_OPENRGB_MODES:
+                effect_name = slugify(mode)
+                effects.append(effect_name)
+                self._effect_to_mode[effect_name] = mode
 
-    # Functions to modify the devices state
-    def _set_effect(self):
-        """Set the devices effect."""
-        try:
-            self._light.set_mode(self._effect)
-        except ConnectionError:
-            self.hass.data[DOMAIN][self._entry_id]["connection_failed"]()
+        if len(effects) > 0:
+            self._supports_effects = True
+            self._attr_supported_features = LightEntityFeature.EFFECT
+            self._attr_effect_list = [EFFECT_OFF, *effects]
+        else:
+            self._supports_effects = False
 
-    def _set_color(self):
-        """Set the devices color using the library."""
-        color = color_util.color_hsv_to_RGB(
-            *self._hs_value, 100.0 * (self._brightness / 255.0)
-        )
-        try:
-            self._light.set_color(RGBUtils.RGBColor(*color))
-            self._assumed_state = False
-        except ConnectionError:
-            self.hass.data[DOMAIN][self._entry_id]["connection_failed"]()
+        self._attr_icon = DEVICE_TYPE_ICONS.get(self.device.type)
 
+        self._update_attrs()
 
-class OpenRGBLed(OpenRGBLight):
-    """Representation of a LED from an OpenRGB Device."""
+    @callback
+    def _update_attrs(self) -> None:
+        """Update the attributes based on the current device state."""
+        mode_data = self.device.modes[self.device.active_mode]
+        mode = mode_data.name
+        if mode == OpenRGBMode.OFF:
+            mode = None
+            mode_supports_colors = False
+        else:
+            mode_supports_colors = check_if_mode_supports_color(mode_data)
 
-    def __init__(self, hass, ha_dev_unique_id, entry_id, light, led_id, unique_id):
-        """Initialize an OpenRGB light."""
-        super().__init__(hass, ha_dev_unique_id, entry_id)
-        self._light = light
-        self._led_id = led_id
-        self._unique_id = unique_id
-        self._attr_unique_id = f"{ha_dev_unique_id}_{unique_id}"
-        self._name = self._retrieve_current_name()
-        _LOGGER.debug("led name: %s", self._name)
-
-    async def async_added_to_hass(self):
-        """Call when entity is added to hass."""
-
-        self.hass.data[DOMAIN][self._entry_id]["entities"][self._unique_id] = (
-            self._attr_unique_id
-        )
-        self._callbacks.append(
-            async_dispatcher_connect(
-                self.hass, SIGNAL_DELETE_ENTITY, self._delete_callback
+        color_mode = None
+        rgb_color = None
+        brightness = None
+        on_by_color = True
+        if mode_supports_colors:
+            # Consider the first non-black LED color as the device color
+            openrgb_off_color = RGBColor(*OFF_COLOR)
+            openrgb_color = next(
+                (color for color in self.device.colors if color != openrgb_off_color),
+                openrgb_off_color,
             )
-        )
-        self._callbacks.append(
-            async_dispatcher_connect(
-                self.hass, SIGNAL_UPDATE_ENTITY, self._update_callback
-            )
-        )
+
+            if openrgb_color == openrgb_off_color:
+                on_by_color = False
+            else:
+                rgb_color = (
+                    openrgb_color.red,
+                    openrgb_color.green,
+                    openrgb_color.blue,
+                )
+                # Derive color and brightness from the scaled color
+                hsv_color = color_RGB_to_hsv(*rgb_color)
+                rgb_color = color_hs_to_RGB(hsv_color[0], hsv_color[1])
+                brightness = round(255.0 * (hsv_color[2] / 100.0))
+
+        elif mode is None:
+            # If mode is Off, retain previous color mode to avoid changing the UI
+            color_mode = self._attr_color_mode
+        else:
+            # If the current mode is not Off and does not support
+            # color, change to ON/OFF mode
+            color_mode = ColorMode.ONOFF
+
+        if not on_by_color:
+            # If Off by color, retain previous color mode to avoid changing the UI
+            color_mode = self._attr_color_mode
+
+        if color_mode is None:
+            # If color mode is still unknown, default to RGB
+            color_mode = ColorMode.RGB
+
+        if self._attr_brightness is not None and self._attr_brightness != brightness:
+            self._previous_brightness = self._attr_brightness
+        if self._attr_rgb_color is not None and self._attr_rgb_color != rgb_color:
+            self._previous_rgb_color = self._attr_rgb_color
+        if self._mode is not None and self._mode != mode:
+            self._previous_mode = self._mode
+
+        self._attr_color_mode = color_mode
+        self._attr_supported_color_modes = {color_mode}
+        self._attr_rgb_color = rgb_color
+        self._attr_brightness = brightness
+        if not self._supports_effects or mode is None:
+            self._attr_effect = None
+        elif mode in EFFECT_OFF_OPENRGB_MODES:
+            self._attr_effect = EFFECT_OFF
+        else:
+            self._attr_effect = slugify(mode)
+        self._mode = mode
+
+        if mode is None:
+            # If the mode is Off, the light is off
+            self._attr_is_on = False
+        else:
+            self._attr_is_on = on_by_color
+
+    @callback
+    @override
+    def _handle_coordinator_update(self) -> None:
+        """Handle updated data from the coordinator."""
+        if self.available:
+            self._update_attrs()
+        super()._handle_coordinator_update()
+
+        # Signal that the update has completed for all waiting events
+        for event in self._update_events:
+            event.set()
+        self._update_events.clear()
 
     @property
-    def led_id(self):
-        """Return the id of the assigned led."""
-        return self._led_id
+    @override
+    def available(self) -> bool:
+        """Return if the light is available."""
+        return super().available and self.device_key in self.coordinator.data
 
     @property
-    def supported_features(self):
-        """Return the supported features for this device."""
-        return LightEntityFeature(0)
+    def device(self) -> Device:
+        """Return the OpenRGB device."""
+        return self.coordinator.data[self.device_key]
 
-    def _device_turned_off(self, **kwargs):
-        if self._brightness > 0:
-            # preserve the state
-            self._prev_brightness = self._brightness
-            self._prev_hs_value = self._hs_value
+    async def _async_refresh_data(self) -> None:
+        """Request a data refresh from the coordinator and wait for it to complete."""
+        update_event = asyncio.Event()
+        self._update_events.append(update_event)
+        await self.coordinator.async_request_refresh()
+        await update_event.wait()
 
-            self._brightness = 0
-            self._set_color()
-
-    def _retrieve_current_name(self) -> str:
-        return f"{self._light.name} {self._light.device_id} LED {self._led_id}"
-
-    def _retrieve_current_hsv_color(self) -> tuple[float, float, float]:
-        return color_util.color_RGB_to_hsv(
-            *orgb_tuple(self._light.colors[self._led_id])
+    async def _async_apply_color(
+        self, rgb_color: tuple[int, int, int], brightness: int
+    ) -> None:
+        """Apply the RGB color and brightness to the device."""
+        brightness_factor = brightness / 255.0
+        scaled_color = RGBColor(
+            int(rgb_color[0] * brightness_factor),
+            int(rgb_color[1] * brightness_factor),
+            int(rgb_color[2] * brightness_factor),
         )
 
-    def _set_color(self):
-        """Set the devices color using the library."""
-        color = color_util.color_hsv_to_RGB(
-            *self._hs_value, 100.0 * (self._brightness / 255.0)
+        async with self.coordinator.client_lock:
+            try:
+                await self.hass.async_add_executor_job(
+                    self.device.set_color, scaled_color, True
+                )
+            except CONNECTION_ERRORS as err:
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="communication_error",
+                    translation_placeholders={
+                        "server_address": self.coordinator.server_address,
+                        "error": str(err),
+                    },
+                ) from err
+            except ValueError as err:
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="openrgb_error",
+                    translation_placeholders={
+                        "error": str(err),
+                    },
+                ) from err
+
+    async def _async_apply_mode(self, mode: str) -> None:
+        """Apply the given mode to the device."""
+        async with self.coordinator.client_lock:
+            try:
+                await self.hass.async_add_executor_job(self.device.set_mode, mode)
+            except CONNECTION_ERRORS as err:
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="communication_error",
+                    translation_placeholders={
+                        "server_address": self.coordinator.server_address,
+                        "error": str(err),
+                    },
+                ) from err
+            except ValueError as err:
+                raise HomeAssistantError(
+                    translation_domain=DOMAIN,
+                    translation_key="openrgb_error",
+                    translation_placeholders={
+                        "error": str(err),
+                    },
+                ) from err
+
+    @override
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Turn on the light."""
+        mode = None
+        if ATTR_EFFECT in kwargs:
+            effect = kwargs[ATTR_EFFECT]
+            if self._attr_effect_list is None or effect not in self._attr_effect_list:
+                raise ServiceValidationError(
+                    translation_domain=DOMAIN,
+                    translation_key="unsupported_effect",
+                    translation_placeholders={
+                        "effect": effect,
+                        "device_name": self.device.name,
+                    },
+                )
+            if effect == EFFECT_OFF:
+                mode = self._preferred_no_effect_mode
+            else:
+                mode = self._effect_to_mode[effect]
+        elif self._mode is None or (
+            self._attr_rgb_color is None and self._attr_brightness is None
+        ):
+            # Restore previous mode when turning on from Off mode or black color
+            mode = self._previous_mode or self._preferred_no_effect_mode
+
+        # Check if current or new mode supports colors
+        if mode is None:
+            # When not applying a new mode, check if the current mode supports color
+            mode_supports_color = self._mode in self._supports_color_modes
+        else:
+            mode_supports_color = mode in self._supports_color_modes
+
+        color_or_brightness_requested = (
+            ATTR_RGB_COLOR in kwargs or ATTR_BRIGHTNESS in kwargs
         )
-        try:
-            self._light.leds[self._led_id].set_color(RGBUtils.RGBColor(*color))
-            self._assumed_state = False
-        except ConnectionError:
-            self.hass.data[DOMAIN][self._entry_id]["connection_failed"]()
+        if color_or_brightness_requested and not mode_supports_color:
+            raise ServiceValidationError(
+                translation_domain=DOMAIN,
+                translation_key="effect_no_color_support",
+                translation_placeholders={
+                    "effect": slugify(mode or self._mode or ""),
+                    "device_name": self.device.name,
+                },
+            )
+
+        # Apply color even if switching from Off mode to a color-capable mode
+        # because there is no guarantee that the device won't go back to black
+        need_to_apply_color = color_or_brightness_requested or (
+            mode_supports_color
+            and (self._attr_brightness is None or self._attr_rgb_color is None)
+        )
+
+        # If color/brightness restoration require color support
+        # but mode doesn't support it, switch to a color-capable
+        # mode
+        if need_to_apply_color and not mode_supports_color:
+            mode = self._preferred_no_effect_mode
+
+        if mode is not None:
+            await self._async_apply_mode(mode)
+
+        if need_to_apply_color:
+            brightness = None
+            if ATTR_BRIGHTNESS in kwargs:
+                brightness = kwargs[ATTR_BRIGHTNESS]
+            elif self._attr_brightness is None:
+                # Restore previous brightness when turning on
+                brightness = self._previous_brightness
+            if brightness is None:
+                # Retain current brightness or use default if still None
+                brightness = self._attr_brightness or DEFAULT_BRIGHTNESS
+
+            color = None
+            if ATTR_RGB_COLOR in kwargs:
+                color = kwargs[ATTR_RGB_COLOR]
+            elif self._attr_rgb_color is None:
+                # Restore previous color when turning on
+                color = self._previous_rgb_color
+            if color is None:
+                # Retain current color or use default if still None
+                color = self._attr_rgb_color or DEFAULT_COLOR
+
+            await self._async_apply_color(color, brightness)
+
+        await self._async_refresh_data()
+
+    @override
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Turn off the light."""
+        if self._supports_off_mode:
+            await self._async_apply_mode(OpenRGBMode.OFF)
+        else:
+            # If the device does not support Off mode, set color to black.
+            # Color writes are ignored while a mode without PER_LED color
+            # support (e.g. a firmware effect) is active — switch to the
+            # preferred no-effect mode first so the black actually lands.
+            if self._mode not in self._supports_color_modes:
+                await self._async_apply_mode(self._preferred_no_effect_mode)
+            await self._async_apply_color(OFF_COLOR, 0)
+
+        await self._async_refresh_data()
+
+
+def check_if_mode_supports_color(mode: ModeData) -> bool:
+    """Return True if the mode supports colors."""
+    return mode.color_mode == ModeColors.PER_LED
