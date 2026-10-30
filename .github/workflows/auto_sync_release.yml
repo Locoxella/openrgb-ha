@@ -93,10 +93,12 @@ jobs:
             # Re-apply our custom patches over upstream files
             if [ -d "$TMP_DIR/core-${UPSTREAM_VERSION}/homeassistant/components/openrgb" ]; then
               echo "Upstream openrgb component located. Preserving custom patches..."
-              # Backup our custom coordinator and init tweaks
+              # Backup our customized files
               cp custom_components/openrgb/coordinator.py /tmp/coord_backup.py
               cp custom_components/openrgb/__init__.py /tmp/init_backup.py
               cp custom_components/openrgb/light.py /tmp/light_backup.py
+              cp custom_components/openrgb/config_flow.py /tmp/config_flow_backup.py
+              cp custom_components/openrgb/const.py /tmp/const_backup.py
 
               # Sync fresh files
               rm -rf custom_components/openrgb/*
@@ -106,6 +108,8 @@ jobs:
               cp /tmp/coord_backup.py custom_components/openrgb/coordinator.py
               cp /tmp/init_backup.py custom_components/openrgb/__init__.py
               cp /tmp/light_backup.py custom_components/openrgb/light.py
+              cp /tmp/config_flow_backup.py custom_components/openrgb/config_flow.py
+              cp /tmp/const_backup.py custom_components/openrgb/const.py
             fi
             rm -rf "$TMP_DIR"
           fi
