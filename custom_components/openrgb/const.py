@@ -10,6 +10,18 @@ from openrgb.utils import (
     OpenRGBDisconnected,
     SDKVersionError,
 )
+import openrgb.utils
+
+# Monkeypatch openrgb.utils.parse_string to prevent UnicodeDecodeError on invalid bytes in serial/metadata
+if getattr(openrgb.utils, "_ha_patched_parse_string", None) is None:
+    _orig_parse_string = openrgb.utils.parse_string
+
+    def _safe_parse_string(data):
+        length = openrgb.utils.parse_var("H", data)
+        return openrgb.utils.parse_var(f"{length}s", data).decode("utf-8", errors="replace").rstrip("\x00")
+
+    openrgb.utils.parse_string = _safe_parse_string
+    openrgb.utils._ha_patched_parse_string = True
 
 DOMAIN = "openrgb"
 
